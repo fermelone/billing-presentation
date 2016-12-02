@@ -1,9 +1,0 @@
-billingService/ws/ObjectFactory.class
-billingService/ws/Bill_Type.class
-billingService/ws/Bill.class
-billingService/ws/Process.class
-billingService/ws/ProcessResponse.class
-billingService/ws/BillImplService.class
-billingService/ws/BillService.class
-billingService/ws/package-info.class
-billingService/ws/Status.class
