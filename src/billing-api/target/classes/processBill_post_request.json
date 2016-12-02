@@ -1,0 +1,9 @@
+{
+  "id" : "1001",
+  "clientName" : "John",
+  "clientLastName" : "Smith",
+  "clientAddress" : "Fake St. 123",
+  "clientPhone" : "000-000-0000",
+  "amount" : 200.00,
+  "currency" : "USD"
+}
