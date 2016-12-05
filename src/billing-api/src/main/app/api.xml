@@ -48,7 +48,7 @@ http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/m
 }]]></dw:set-variable>
         </dw:transform-message>
         <ws:consumer config-ref="Web_Service_Consumer" doc:name="Billing System WS" operation="process"/>
-        <dw:transform-message doc:name="Transform SOAP Response to JSON">
+        <dw:transform-message doc:name="Transform SOAP Response to JAVA">
             <dw:set-payload><![CDATA[%dw 1.0
 %output application/java
 %namespace ns0 http://ws.billingService/
@@ -61,34 +61,13 @@ http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/m
         <choice doc:name="Choice">
             <when expression="#[payload.Status==&quot;Success&quot;]">
                 <async doc:name="Async">
-                    <dw:transform-message doc:name="Transform to JSON">
-                        <dw:input-payload doc:sample="sample_data/map.dwl"/>
-                        <dw:set-payload><![CDATA[%dw 1.0
-%output application/json
----
-payload]]></dw:set-payload>
-                    </dw:transform-message>
-                    <jms:outbound-endpoint topic="billing.processingResults" connector-ref="Active_MQ" mimeType="application/json" doc:name="Processing Results Topic">
-                        <xa-transaction action="NONE"/>
-                    </jms:outbound-endpoint>
+                    <flow-ref name="successFlow" doc:name="Call successFlow"/>
                 </async>
             </when>
             <otherwise>
+                <set-property propertyName="http.status" value="#[202]" doc:name="Set Status Code to 202"/> <!-- It is not OK, but it is not failed either, it has been accepted for reprocessing -->
                 <async doc:name="Async">
-                    <dw:transform-message doc:name="Transform to JSON">
-                        <dw:set-payload><![CDATA[%dw 1.0
-%output application/json
----
-{
-	Status: payload.Status,
-	Message: payload.Message,
-	ReprocessingID: flowVars.bill.id
-}]]></dw:set-payload>
-                    </dw:transform-message>
-                    <object-to-string-transformer doc:name="Convert to String"/> <!-- Just to be able to see in ActiveMQ admin webconsole for demo purposes -->
-                    <jms:outbound-endpoint queue="billing.reprocessing" connector-ref="Active_MQ" mimeType="application/json" doc:name="Reprocessing Queue">
-                        <xa-transaction action="NONE"/>
-                    </jms:outbound-endpoint>
+                    <flow-ref name="reprocessingFlow" doc:name="Call reprocessingFlow"/>
                 </async>
             </otherwise>
         </choice>
@@ -103,6 +82,34 @@ payload]]></dw:set-payload>
 }]]></dw:set-payload>
             </dw:transform-message>
         </catch-exception-strategy>
+    </flow>
+    <flow name="successFlow" processingStrategy="synchronous">
+        <dw:transform-message doc:name="Transform to JSON">
+            <dw:input-payload doc:sample="sample_data/map.dwl"/>
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+payload]]></dw:set-payload>
+        </dw:transform-message>
+        <jms:outbound-endpoint topic="billing.processingResults" connector-ref="Active_MQ" mimeType="application/json" doc:name="Processing Results Topic">
+            <xa-transaction action="NONE"/>
+        </jms:outbound-endpoint>
+    </flow>
+    <flow name="reprocessingFlow" processingStrategy="synchronous">
+        <dw:transform-message doc:name="Transform to JSON">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+{
+	Status: payload.Status,
+	Message: payload.Message,
+	ReprocessingID: flowVars.bill.id
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <object-to-string-transformer doc:name="Convert to String"/>
+        <jms:outbound-endpoint queue="billing.reprocessing" connector-ref="Active_MQ" mimeType="application/json" doc:name="Reprocessing Queue">
+            <xa-transaction action="NONE"/>
+        </jms:outbound-endpoint>
     </flow>
     <apikit:mapping-exception-strategy name="api-apiKitGlobalExceptionMapping">
         <apikit:mapping statusCode="404">
