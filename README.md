@@ -18,4 +18,4 @@ After that, we leveraged this API Definition in Anypoint Studio, were we used AP
 
 ### End result
 
-Implementing this approach we are reducing friction for the web/mobile dev team to develop the employee portal, by decoupling the Billing Legacy System connectivity from its consumers, as well as paving the roads for future projects that might leverage the same Billing API.
+Implementing this approach we are reducing friction for the web/mobile dev team to develop the employee portal, by decoupling the Billing Legacy System connectivity from its consumers, as well as paving the roads for future projects that might reuse the same Billing API. We also add the concept of governability to our Billing API, being able to apply business rules as well as security on top of our systems.
